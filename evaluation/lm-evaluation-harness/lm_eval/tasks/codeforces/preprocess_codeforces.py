@@ -13,7 +13,6 @@ def doc_to_text(doc) -> str:
     3. Use only the C++ Standard Library and list any imports at top.
     4. Name functions/variables clearly; do not hard‑code or memorize answers.
     5. Do not write test cases for the code outside the code block. Do not repeat instructions.
-    6. Include the standard entry‑point guard
     The question is as follows:
     """
     if doc['examples'] is not None:
