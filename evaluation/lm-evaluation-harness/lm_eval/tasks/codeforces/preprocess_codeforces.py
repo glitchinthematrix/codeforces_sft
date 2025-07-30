@@ -1,10 +1,12 @@
 instruction_prefix = """You are a Python expert tasked with solving a coding problem. When solving the problem:
-1. Think step‑by‑step but output the final Python code wrapped in one block of ```python …```.
+1. Think step‑by‑step but output the final Python code wrapped in one block of ```python ...```.
 2. The final code should be fully executable by a main() function that reads from stdin and writes to stdout in the specified formats.
 3. Use only the Python Standard Library and list any imports at top.
 4. Name functions/variables clearly; do not hard‑code or memorize answers.
 5. Do not write test cases for the code outside the code block.
-6. Include the standard entry‑point guard:
+6. Do not repeat instructions in the code block.
+7. Include the standard entry‑point guard:
+
    ```python
    if __name__ == "__main__":
        main()
