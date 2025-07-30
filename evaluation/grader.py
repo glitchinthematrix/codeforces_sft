@@ -8,7 +8,7 @@ from contextlib import redirect_stdout
 from tqdm import tqdm
 
 '''
-FE: Format Error
+FE: Formatting Error
 CE: Compilation Error
 RE: Runtime Error
 TLE: Time Limit Exceeded
@@ -18,10 +18,10 @@ AC: Accepted
 '''
 
 def run_tests(code, official_tests, checker_fn, time_limit: float, memory_limit: int):
-    # Extract Python code from markdown format
-    code_matches = re.findall(r"```python(.*?)(```|$)", code, re.DOTALL)
+    # Extract C++ code from markdown format
+    code_matches = re.findall(r"```cpp(.*?)(```|$)", code, re.DOTALL)
     if code_matches:
-        # Find all python code blocks, skip those that are just '...'
+        # Find all cpp code blocks, skip ```cpp ...```
         code = None
         for block, _ in code_matches:
             candidate = block.strip()
@@ -29,17 +29,15 @@ def run_tests(code, official_tests, checker_fn, time_limit: float, memory_limit:
                 code = candidate
                 break
         if not code:
-            return [{'status': 'FE', 'message': 'No valid Python code block found'}]
+            return [{'status': 'FE', 'message': 'No valid C++ code block found'}]
             
     else:
-        return [{'status': 'FE', 'message': 'No Python code block found'}]
-    # Check for compilation errors
-    try:
-        compile(code, '<string>', 'exec')
-    except SyntaxError as e:
-        return [{'status': 'CE', 'message': f'Compilation Error: {str(e)}'}]
-    except Exception as e:
-        return [{'status': 'CE', 'message': f'Compilation Error: {str(e)}'}]
+        return [{'status': 'FE', 'message': 'No C++ code block found'}]
+    
+    # Check for compilation errors by actually compiling the C++ code
+    compile_result = compile_cpp_code(code)
+    if compile_result['error']:
+        return [{'status': 'CE', 'message': f'Compilation Error: {compile_result["error"]}'}]
     
     # Run each test dict individually and collect all results
     test_results = []
@@ -98,18 +96,49 @@ def run_tests(code, official_tests, checker_fn, time_limit: float, memory_limit:
     
     return test_results
 
-def execute_with_constraints(code, input_data, time_limit, memory_limit):
+def compile_cpp_code(code):
+    """Compile C++ code and return compilation result"""
     # Create temporary file for the code
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.cpp', delete=False) as f:
         f.write(code)
         code_file = f.name
+    
+    # Create executable name
+    executable_file = code_file.replace('.cpp', '')
+    
+    try:
+        # Compile the C++ code
+        cmd = ['g++', '-std=c++17', '-O2', '-o', executable_file, code_file]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        
+        if result.returncode != 0:
+            return {'executable': None, 'error': result.stderr.strip() or result.stdout.strip()}
+        
+        return {'executable': executable_file, 'error': None}
+        
+    except subprocess.TimeoutExpired:
+        return {'executable': None, 'error': 'Compilation timeout'}
+    except Exception as e:
+        return {'executable': None, 'error': str(e)}
+    finally:
+        # Clean up source file
+        if os.path.exists(code_file):
+            os.unlink(code_file)
+
+def execute_with_constraints(code, input_data, time_limit, memory_limit):
+    # Compile the C++ code first
+    compile_result = compile_cpp_code(code)
+    if compile_result['error']:
+        return {'output': '', 'error': compile_result['error'], 'timeout': False, 'memory_exceeded': False}
+    
+    executable_file = compile_result['executable']
     
     try:
         # Prepare the command with memory limit using ulimit
         memory_kb = memory_limit * 1024  # Convert MB to KB
         cmd = [
             'bash', '-c', 
-            f'ulimit -v {memory_kb}; python3 {code_file}'
+            f'ulimit -v {memory_kb}; {executable_file}'
         ]
         
         # Execute with timeout
@@ -127,7 +156,7 @@ def execute_with_constraints(code, input_data, time_limit, memory_limit):
             
             if process.returncode != 0:
                 # Check if it's a memory error
-                if 'MemoryError' in stderr or 'memory' in stderr.lower():
+                if 'std::bad_alloc' in stderr or 'memory' in stderr.lower() or process.returncode == 137:
                     return {'output': '', 'error': None, 'timeout': False, 'memory_exceeded': True}
                 return {'output': '', 'error': stderr, 'timeout': False, 'memory_exceeded': False}
             
@@ -142,8 +171,8 @@ def execute_with_constraints(code, input_data, time_limit, memory_limit):
     except Exception as e:
         return {'output': '', 'error': str(e), 'timeout': False, 'memory_exceeded': False}
     finally:
-        if os.path.exists(code_file):
-            os.unlink(code_file)
+        if os.path.exists(executable_file):
+            os.unlink(executable_file)
 
 def run_checker(checker_fn, input_data, expected_output, actual_output):
     
@@ -187,8 +216,10 @@ def run_checker(checker_fn, input_data, expected_output, actual_output):
     except Exception as e:
         return {'status': 'RE', 'message': f'Checker error: {str(e)}'}
     finally:
-        if os.path.exists(checker_file):
-            os.unlink(checker_file)
+        # Clean up all temporary files
+        for temp_file in [checker_file, input_file, expected_output_file, actual_output_file]:
+            if os.path.exists(temp_file):
+                os.unlink(temp_file)
 
 def main(args):
 
@@ -220,23 +251,25 @@ def main(args):
             test_logs[problem_id][f'attempt_{idx}']['logs'] = logs
 
             accepted = True
+            failure_reasons = []
             for log in logs:
                 if log['status'] != 'AC':
                     accepted = False
-                    failure = log['status']
-                    break
+                    failure_reasons.append(log['status'])
+    
             if accepted:
                 test_logs[problem_id][f'attempt_{idx}']['accepted'] = True
                 test_logs[problem_id][f'attempt_{idx}']['failure_reasons'] = None
             else:
                 test_logs[problem_id][f'attempt_{idx}']['accepted'] = False
-                test_logs[problem_id][f'attempt_{idx}']['failure_reasons'] = failure
+                test_logs[problem_id][f'attempt_{idx}']['failure_reasons'] = ', '.join(failure_reasons)
 
-        for problem_id in test_logs:
-            for k, v in test_logs[problem_id].items():
-                if k.startswith('attempt_') and v.get('accepted'):
-                    total_accepted += 1
-                    break
+        
+        for k, v in test_logs[problem_id].items():
+            if k.startswith('attempt_') and v.get('accepted'):
+                total_accepted += 1
+                break
+
     with open(os.path.join(args.path, 'grader_logs.json'), 'w') as f:
         json.dump(test_logs, f)
     print(f"Total accepted: {total_accepted}/{len(data)}")
