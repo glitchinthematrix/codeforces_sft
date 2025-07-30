@@ -1,0 +1,3 @@
+#base model
+MODEL_PATH="/root/hf/models/models--Qwen--Qwen2.5-7B/snapshots/d149729398750b98c0af14eb82c78cfe92750796/"
+lm_eval --model vllm --model_args pretrained=$MODEL_PATH,tokenizer=$MODEL_PATH,dtype=bfloat16,tensor_parallel_size=4 --tasks codeforces_16 --batch_size auto --apply_chat_template --output_path /home/codeforces_sft/eval_outputs/base_model/ --log_samples --gen_kwargs "max_gen_toks=32768,temperature=0.6" --limit 1
