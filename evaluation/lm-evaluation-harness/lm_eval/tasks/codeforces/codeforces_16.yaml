@@ -1,14 +1,13 @@
 task: codeforces_16
 dataset_path: open-r1/codeforces
-dataset_name: codeforces
+dataset_name: default
 output_type: generate_until
 dataset_kwargs:
-  cache_dir: ~/hf/datasets
+  cache_dir: /root/hf/datasets
   download_mode: reuse_dataset_if_exists
 test_split: test
 doc_to_text: !function preprocess_codeforces.doc_to_text
 doc_to_target: !function preprocess_codeforces.doc_to_target
-doc_to_choice: ["yes", "no", "maybe"]
 generation_kwargs:
   until: []
   do_sample: false
