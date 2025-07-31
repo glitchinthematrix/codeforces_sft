@@ -37,7 +37,8 @@ def run_tests(code, official_tests, checker_fn, time_limit: float, memory_limit:
     # Check for compilation errors by actually compiling the C++ code
     compile_result = compile_cpp_code(code)
     if compile_result['error']:
-        return [{'status': 'CE', 'message': f'Compilation Error: {compile_result["error"]}'}]
+        return [{'status': 'CE', 'message': f'Compilation Error: {compile_result["error"]}'}]    
+    executable_file = compile_result['executable']
     
     # Run each test dict individually and collect all results
     test_results = []
@@ -59,7 +60,7 @@ def run_tests(code, official_tests, checker_fn, time_limit: float, memory_limit:
             scaled_time_limit = time_limit
         
         # Execute this test dict with constraints
-        result = execute_with_constraints(code, test_input, scaled_time_limit, scaled_memory_limit)
+        result = execute_with_constraints(executable_file, test_input, scaled_time_limit, scaled_memory_limit)
         
         test_result = {'test_idx': test_idx + 1, 'input': test_input, 'expected': test_output}
         
@@ -125,13 +126,7 @@ def compile_cpp_code(code):
         if os.path.exists(code_file):
             os.unlink(code_file)
 
-def execute_with_constraints(code, input_data, time_limit, memory_limit):
-    # Compile the C++ code first
-    compile_result = compile_cpp_code(code)
-    if compile_result['error']:
-        return {'output': '', 'error': compile_result['error'], 'timeout': False, 'memory_exceeded': False}
-    
-    executable_file = compile_result['executable']
+def execute_with_constraints(executable_file, input_data, time_limit, memory_limit):
     
     try:
         # Prepare the command with memory limit using ulimit
@@ -242,6 +237,7 @@ def main(args):
         problem_id = problem['doc']['id']
         test_logs[problem_id] = {}
         test_logs[problem_id]['ratings'] = problem['doc']['rating']
+        test_logs[problem_id]['tags'] = problem['doc']['tags']
         
         attempts = problem['resps'][0]
         for idx, resp in enumerate(tqdm(attempts, desc=f"Problem {problem_id} attempts", leave=False)):
