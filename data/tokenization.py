@@ -20,19 +20,27 @@ def ApplyTemplate(item, tokenizer):
         {"role": "user", "content": prompt.strip()},
         {
             "role": "assistant", 
-            "content": "<|im_start|>think\n" + "\n".join(cot.strip()) + "\n<|im_start|>answer\n" + answer.strip()
+            "content": "<|im_start|>think\n" + cot.strip() + "\n<|im_start|>answer\n" + answer.strip()
         }
     ], tokenize=False)
 
     return dict(text=text)
 
+def tokenize_fn(example, tokenizer):
+    return {**tokenizer(
+        example['text'],
+        padding=False
+    ),'text': example['text']}
 
 def main(args):
     # load tokenizer from cache
-    tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-7B-Instruct", cache_dir='/root/hf/')
+    tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-7B-Instruct", cache_dir='/root/hf/', use_fast=True)
     ds = datasets.load_from_disk(args.decontaminated_ds_path)
-    dataset = dataset.map(partial(ApplyTemplate, tokenizer=tokenizer))
-    dataset_w_split = datasets.DatasetDict({'train': dataset})
+    print('loaded dataset')
+    ds = ds.map(partial(ApplyTemplate, tokenizer=tokenizer))
+    ds = ds.map(partial(tokenize_fn, tokenizer=tokenizer), batched=True, num_proc=8)
+    dataset_w_split = datasets.DatasetDict({'train': ds})
+
     # display the first 5 examples
     for i in range(5):
         print(dataset_w_split['train'][i]['text'])
