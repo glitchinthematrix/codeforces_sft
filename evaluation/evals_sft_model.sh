@@ -1,5 +1,0 @@
-#base model
-MODEL_PATH="/root/hf/models/codeforces_sft_qwen_2.5_7b_instruct_bs16_lr3e-5_epoch5_wd1e-4/"
-lm_eval --model vllm --model_args pretrained=$MODEL_PATH,tokenizer=$MODEL_PATH,dtype=bfloat16,tensor_parallel_size=4 --tasks codeforces --batch_size auto --apply_chat_template --output_path /home/codeforces_sft/eval_outputs/sft_model/ --log_samples --gen_kwargs "max_gen_toks=32768,temperature=0.7,top_p=0.8,do_sample=true,top_k=20,max_tokens_thinking=auto" --limit 2 
-
-lm_eval --model vllm --model_args pretrained=$MODEL_PATH,tokenizer=$MODEL_PATH,dtype=bfloat16,tensor_parallel_size=4 --tasks codeforces --batch_size auto --apply_chat_template --output_path /home/codeforces_sft/eval_outputs/sft_model/ --log_samples --gen_kwargs "max_gen_toks=32768,temperature=0.7,top_p=0.8,do_sample=true,top_k=20,max_tokens_thinking=auto,thinking_n_ignore=1,thinking_n_ignore_str=Wait" --limit 2 

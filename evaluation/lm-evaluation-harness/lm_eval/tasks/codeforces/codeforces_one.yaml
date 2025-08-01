@@ -1,4 +1,4 @@
-task: codeforces
+task: codeforces_one
 dataset_path: open-r1/codeforces
 dataset_name: default
 output_type: generate_until
@@ -10,12 +10,6 @@ doc_to_text: !function preprocess_codeforces.doc_to_text
 doc_to_target: !function preprocess_codeforces.doc_to_target
 generation_kwargs:
   until: []
-  do_sample: false
-  temperature: 1
+  do_sample: true
+  temperature: 0.4
   max_gen_toks: 32768
-repeats: 16
-filter_list:
-  - name: "all" # Will do coverage, majority, and take_first_k
-    filter:
-      - function: "take_first_k"
-        k: 16

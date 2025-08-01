@@ -245,7 +245,7 @@ class VLLM(TemplateLM):
                 print(f"Thinking start: {thinking_start}, Thinking end: {thinking_end}, Stop: {until_thinking}")
                 thinking_start_tok = self.tok_encode(thinking_start)
                 thinking_end_tok = self.tok_encode(thinking_end)
-                thinking_end_max = thinking_end + ''
+                thinking_end_max = thinking_end + 'Final Answer:'
                 thinking_end_max_tok = self.tok_encode(thinking_end_max)
                 newline_tok = self.tok_encode("\n")
                 # Cast to list to avoid `dictionary changed size during iteration`
@@ -254,8 +254,8 @@ class VLLM(TemplateLM):
                 sampling_params_thinking = {**kwargs, **sampling_params_thinking}
                 if "max_tokens" in sampling_params_thinking:
                     if sampling_params_thinking["max_tokens"] == "auto":
-                        # Leave 1500 tokens for answer
-                        sampling_params_thinking["max_tokens"] = max_tokens - max([len(x) for x in requests]) - len(thinking_start_tok) - len(thinking_end_max_tok) - 1500
+                        # Leave 800 tokens for answer
+                        sampling_params_thinking["max_tokens"] = max_tokens - max([len(x) for x in requests]) - len(thinking_start_tok) - len(thinking_end_max_tok) - 800
                         print(f"Auto setting max_tokens_thinking to {sampling_params_thinking['max_tokens']}")
                     else:
                         sampling_params_thinking["max_tokens"] = int(sampling_params_thinking["max_tokens"])

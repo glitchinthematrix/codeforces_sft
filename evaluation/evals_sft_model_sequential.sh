@@ -1,0 +1,5 @@
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+#sequential scaling
+MODEL_PATH="/root/hf/models/codeforces_sft_qwen_2.5_7b_instruct_bs16_lr3e-5_epoch5_wd1e-4/"
+lm_eval --model vllm --model_args pretrained=$MODEL_PATH,tokenizer=$MODEL_PATH,dtype=bfloat16,tensor_parallel_size=4 --tasks codeforces_one --batch_size auto --apply_chat_template --output_path /home/codeforces_sft/eval_outputs/sft_model/sequential_scaling --log_samples --gen_kwargs "max_gen_toks=32768,max_tokens_thinking=auto,thinking_n_ignore=1,thinking_n_ignore_str=Wait,temperature=0.4,do_sample=true" 
+lm_eval --model vllm --model_args pretrained=$MODEL_PATH,tokenizer=$MODEL_PATH,dtype=bfloat16,tensor_parallel_size=4 --tasks codeforces_one --batch_size auto --apply_chat_template --output_path /home/codeforces_sft/eval_outputs/sft_model/sequential_scaling --log_samples --gen_kwargs "max_gen_toks=32768,max_tokens_thinking=auto,thinking_n_ignore=2,thinking_n_ignore_str=Wait,temperature=0.4,do_sample=true"  

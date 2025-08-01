@@ -7,13 +7,17 @@ def doc_to_text(doc) -> str:
     input_format = doc['input_format']
     output_format = doc['output_format']
 
-    instruction_prefix = """You are a competitive programming tutor tasked with solving a coding problem in C++. When solving the problem:
-    1. Think step‑by‑step but output the final C++ code wrapped in one block of ```cpp <code here>```.
-    2. The final code should be fully executable by a main() function that reads from stdin and writes to stdout in the specified formats.
-    3. Use only the C++ Standard Library and list any imports at top.
-    4. Name functions/variables clearly; do not hard‑code or memorize answers.
-    5. Do not write test cases for the code outside the code block. Do not repeat instructions.
-    The question is as follows:
+    instruction_prefix = """You are a competitive programming tutor tasked with solving a competitive programming problem.
+(1) Please reason step by step about your solution approach, then provide a optimal algorithmic implementation in C++17 that is thoroughly optimized for both speed and memory usage.
+(2) Your approach must use the data structures needed to process the largest possible test cases within the time and memory limits.
+(3) Cleanly name functions and variables and specify all imports at top.
+(4) Your solution must read input from standard input (cin), write output to standard output (cout) following the input and output format provided.
+(5) Do not include any debug prints or additional output and do not memorize answers.
+(6) Put your final solution within a single code block:
+```cpp
+<your code here>
+```
+## Problem
     """
     if doc['examples'] is not None:
         if 'input' in doc['examples'][0]:
@@ -27,10 +31,8 @@ def doc_to_text(doc) -> str:
     else:
         example_inputs = ""
         example_outputs = ""
-    instruction_suffix = """
-    Let's think step by step:
-    """
-    return f"{instruction_prefix}\n{title}: {description}\n## Input Format: {input_format}\n## Output Format: {output_format}\n## Example Inputs:\n```inp\n{example_inputs}\n```\n## Example Outputs:\n```op\n{example_outputs}\n```\n ## Time limit per test case: {doc['time_limit']} seconds\n## Memory limit per test case: {doc['memory_limit']} MB\n{instruction_suffix}"
+    note = doc['note'] if doc['note'] else "None"
+    return f"{instruction_prefix}\n{title}: {description}\n## Input Format\n {input_format}\n## Output Format\n {output_format}\n## Examples\n```input\n{example_inputs}\n```\n```output\n{example_outputs}\n```\n## Constraints\nTime limit per test case: {doc['time_limit']} seconds\nMemory limit per test case: {doc['memory_limit']} MB\n## Note\n{note}"
 
 def doc_to_target(doc) -> int:
     

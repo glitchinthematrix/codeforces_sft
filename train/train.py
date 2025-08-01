@@ -11,14 +11,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 from datasets import load_from_disk
 import transformers
 import trl
-import argparse
-
-
-@dataclass
-class EvaluationConfig:
-    block_size: int = field(default=16384)
-    checkpoint_path: str = field(default="/root/hf/models/codeforces_sft_qwen_2.5_7b_instruct_bs16_lr3e-5_epoch5_wd1e-4/")
-    val_dataset_path: str = field(default="/root/hf/datasets/sft_filtered_decontaminated_tokenized/")
 
 
 @dataclass
@@ -41,51 +33,6 @@ class TrainingConfig:
             self.train_dataset_path = "/root/hf/datasets/sft_filtered_decontaminated_tokenized/"
         else:
             raise ValueError(f"Train dataset name {self.train_dataset_name} not supported")
-
-def evaluate():
-    parser = transformers.HfArgumentParser((EvaluationConfig, trl.SFTConfig))
-    config, args = parser.parse_args_into_dataclasses()
-    log_config = {**asdict(config), **asdict(args)}
-    logging.info(f"Evaluation config: {log_config}")
-
-    ckpt_list = [d for d in os.listdir(config.checkpoint_path) if 'checkpoint' in d]
-    if len(ckpt_list) == 0:
-        raise ValueError(f"No checkpoints found in {config.checkpoint_path}")
-    for ckpt in ckpt_list:
-        model_path = os.path.join(config.checkpoint_path, ckpt)
-        model = transformers.AutoModelForCausalLM.from_pretrained(model_path)
-        tokenizer = transformers.AutoTokenizer.from_pretrained(model_path)
-        dataset = load_from_disk(config.val_dataset_path)
-        instruction_template = "<|im_start|>user\n"
-        response_template = "<|im_start|>assistant\n"
-        tokenizer.add_special_tokens({'pad_token': '<|fim_pad|>'})
-        collator = trl.DataCollatorForCompletionOnlyLM(
-            response_template=response_template,
-            tokenizer=tokenizer,
-            mlm=False,
-            instruction_template=instruction_template
-        )
-        args.dataset_text_field = 'text'
-        args.max_seq_length = config.block_size
-        
-        # Set up trainer for evaluation
-        trainer = trl.SFTTrainer(
-            model,
-            train_dataset=None,
-            eval_dataset=dataset['test'] if 'test' in dataset else None,
-            args=args,
-            data_collator=collator,
-            peft_config=None,
-        )
-        
-        if 'test' in dataset:
-            logging.info(f"Evaluating checkpoint: {ckpt}")
-            eval_results = trainer.evaluate()
-            logging.info(f"Evaluation results for {ckpt}: {eval_results}")
-        else:
-            logging.warning("No test split found in dataset, skipping evaluation")
-            break
-    
     
 def train():
     # parsing input
@@ -150,12 +97,6 @@ def train():
     trainer.accelerator.wait_for_everyone()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--evaluate_only", action="store_true")
-    args = parser.parse_args()
-    if args.evaluate_only:
-        evaluate()
-    else:
-        train()
+    train()
 
    

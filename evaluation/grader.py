@@ -21,18 +21,10 @@ def run_tests(code, official_tests, checker_fn, time_limit: float, memory_limit:
     # Extract C++ code from markdown format
     code_matches = re.findall(r"```cpp(.*?)(```|$)", code, re.DOTALL)
     if code_matches:
-        # Find all cpp code blocks, skip ```cpp ...```
-        code = None
-        for block, _ in code_matches:
-            candidate = block.strip()
-            if candidate != '...':
-                code = candidate
-                break
-        if not code:
-            return [{'status': 'FE', 'message': 'No valid C++ code block found'}]
-            
+        # last code_match is code
+        code = code_matches[-1][0].strip()
     else:
-        return [{'status': 'FE', 'message': 'No C++ code block found'}]
+        return [{'status': 'FE', 'message': 'No valid C++ code block found'}]
     
     # Check for compilation errors by actually compiling the C++ code
     compile_result = compile_cpp_code(code)
@@ -44,8 +36,8 @@ def run_tests(code, official_tests, checker_fn, time_limit: float, memory_limit:
     test_results = []
     
     for test_idx, test in enumerate(official_tests):
-        test_input = test['input'].strip()
-        test_output = test['output'].strip()
+        test_input = test['input']
+        test_output = test['output']
         # Parse the input - first line should be number of test cases
         input_lines = test_input.split('\n')
         
@@ -74,7 +66,7 @@ def run_tests(code, official_tests, checker_fn, time_limit: float, memory_limit:
             test_result.update({'status': 'RE', 'message': f'Runtime Error on test {test_idx + 1}: {result["error"]}', 'actual': ''})
            
         else:
-            actual_output = result['output'].strip()
+            actual_output = result['output']
             test_result['actual'] = actual_output
             
             # Check the result for this test dict
@@ -87,7 +79,7 @@ def run_tests(code, official_tests, checker_fn, time_limit: float, memory_limit:
                     test_result.update({'status': 'AC', 'message': f'Accepted (test {test_idx + 1})'})
             else:
                 # Direct string comparison
-                if actual_output != test_output.strip():
+                if ''.join(actual_output.strip().split('\n')) != ''.join(test_output.strip().split('\r\n')):
                     test_result.update({'status': 'WA', 'message': f'Wrong Answer on test {test_idx + 1}', 'actual': actual_output})
                 
                 else:

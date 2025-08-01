@@ -32,7 +32,7 @@ torchrun \
     --fsdp_config="fsdp_config_qwen.json" \
     --bf16=True \
     --save_strategy="epoch" \
-    --eval_strategy="no" \
+    --eval_strategy="epoch" \
     --logging_steps=1 \
     --lr_scheduler_type="cosine" \
     --learning_rate=3e-5 \
