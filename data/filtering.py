@@ -1,18 +1,22 @@
 import os
 # Fix tokenize.Name compatibility for pandas with Python 3.11+
 import datasets
-
+import random
 
 # os.environ['HF_DATASETS_DOWNLOADED_DATASETS_PATH'] = '~/hf/datasets'
 # os.environ['HF_HOME'] = '~/hf/'
 # os.environ['HF_DATASETS_CACHE'] = '~/hf/datasets'
 
+def subset_dict(n, indices_set, dataset_dict):
+    return {k: [v[i] for i in range(n) if i in indices_set] for k, v in dataset_dict.items()}
 
-def filter_code(ds_code, top_k=10000, max_tokens=16384):
+def filter_code(ds_code, top_k=10000, max_tokens=16384, val=False, val_size=None):
     dataset_dict = {'question': [], 'thinking_trace': [], 'answer': [], 'num_tokens': [], 'source': []}
     # filter for items with num_tokens < max_tokens, then take top_k by num_tokens descending
     filtered_indices = [i for i in range(len(ds_code)) if ds_code[i]['num_tokens'] < max_tokens]
     sorted_indices = sorted(filtered_indices, key=lambda i: ds_code[i]['num_tokens'], reverse=True)
+    if val_size is not None:
+        top_k = top_k + val_size
     selected_indices = sorted_indices[:top_k]
     for i in selected_indices:
         response = ds_code[i]['messages'][1]['content']
@@ -27,20 +31,33 @@ def filter_code(ds_code, top_k=10000, max_tokens=16384):
         dataset_dict['num_tokens'].append(ds_code[i]['num_tokens'])
         dataset_dict['source'].append(ds_code[i].get('source', ''))
 
-    return datasets.Dataset.from_dict(dataset_dict)
+    if not val:
+        return datasets.Dataset.from_dict(dataset_dict)
+    else:
+        n = len(dataset_dict['question'])
+        indices = list(range(n))
+        random.shuffle(indices)
+        val_indices = set(indices[:val_size])
+        train_indices = set(indices[val_size:])
+
+        train_dict = subset_dict(n, train_indices, dataset_dict)
+        val_dict = subset_dict(n, val_indices, dataset_dict)
+        return (
+            datasets.Dataset.from_dict(train_dict),
+            datasets.Dataset.from_dict(val_dict)
+        )
 
 
 def main():
     ds_code = datasets.load_dataset("open-r1/Mixture-of-Thoughts", 'code', cache_dir="~/hf/datasets", download_mode='reuse_dataset_if_exists',split='train')
-    ds_code_filtered = filter_code(ds_code,40000)
+    ds_code_filtered_train, ds_code_filtered_val = filter_code(ds_code, 40000, val=True, val_size = 5000)
     ds_math = datasets.load_dataset("open-r1/Mixture-of-Thoughts", 'math', cache_dir="~/hf/datasets", download_mode='reuse_dataset_if_exists',split='train')
     ds_math_filtered = filter_code(ds_math,10000)
-    ds_combined = datasets.concatenate_datasets([ds_code_filtered, ds_math_filtered])
+    ds_combined = datasets.concatenate_datasets([ds_code_filtered_train, ds_math_filtered])
     #save to disk
     ds_combined.save_to_disk('~/hf/datasets/sft_filtered/')
+    ds_code_filtered_val.save_to_disk('~/hf/datasets/sft_filtered_val/')
     
    
-
-
 if __name__ == "__main__":
     main()

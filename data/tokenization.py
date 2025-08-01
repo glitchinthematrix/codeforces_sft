@@ -39,7 +39,10 @@ def main(args):
     print('loaded dataset')
     ds = ds.map(partial(ApplyTemplate, tokenizer=tokenizer))
     ds = ds.map(partial(tokenize_fn, tokenizer=tokenizer), batched=True, num_proc=8)
-    dataset_w_split = datasets.DatasetDict({'train': ds})
+    ds_val = datasets.load_from_disk(args.val_ds_path)
+    ds_val = ds_val.map(partial(ApplyTemplate, tokenizer=tokenizer))
+    ds_val = ds_val.map(partial(tokenize_fn, tokenizer=tokenizer), batched=True, num_proc=8)
+    dataset_w_split = datasets.DatasetDict({'train': ds, 'test': ds_val})
 
     # display the first 5 examples
     for i in range(5):
@@ -50,5 +53,6 @@ def main(args):
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--decontaminated_ds_path", type=str, default="/root/hf/datasets/sft_filtered_decontaminated/")
+    parser.add_argument("--val_ds_path", type=str, default="/root/hf/datasets/sft_filtered_val/")
     args = parser.parse_args()
     main(args)
