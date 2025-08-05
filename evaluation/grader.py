@@ -222,7 +222,7 @@ def main(args):
     
     test_logs = {}
     total_accepted = 0
-    for problem in tqdm(data, desc="Processing problems"):
+    for i, problem in tqdm(enumerate(data), desc=f"Processing problems"):
         time_limit = problem['doc']['time_limit']
         memory_limit = problem['doc']['memory_limit']
         checker_fn = problem['doc']['generated_checker']

@@ -12,6 +12,8 @@ nnodes=1
 grad_acc=2
 head_node_ip="127.0.0.1"
 
+wandb login --relogin
+
 torchrun \
     --nnodes=$nnodes \
     --nproc_per_node=$gpu_count \
