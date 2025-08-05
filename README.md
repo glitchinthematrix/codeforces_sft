@@ -4,12 +4,20 @@ Fine-tuning pipeline for Codeforces competitive programming problems using Qwen 
 
 ## Setup
 
+Run the automated environment setup script:
+
 ```bash
-conda create -n sft python=3.10
+chmod +x env_setup.sh
+./env_setup.sh
 conda activate sft
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-pip install transformers datasets accelerate wandb lm-eval vllm
 ```
+
+This installs:
+- **PyTorch 2.5.1** with CUDA 12.4 support
+- **Core ML packages**: transformers, datasets, accelerate, peft
+- **Inference**: vLLM 0.7.3 for fast parallel inference  
+- **Evaluation**: lm-eval 0.4.8 with dependencies
+- **Utilities**: wandb, jupyter, matplotlib, seaborn
 
 ## Dataset Curation
 
